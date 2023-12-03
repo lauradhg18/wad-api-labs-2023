@@ -1,5 +1,6 @@
 import express from 'express';
 import User from './userModel';
+import asyncHandler from 'express-async-handler';
 
 const router = express.Router(); // eslint-disable-line
 
@@ -10,13 +11,23 @@ router.get('/', async (req, res) => {
 });
 
 // register(Create)/Authenticate User
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
     if (req.query.action === 'register') {  //if action is 'register' then save to DB
-        await User(req.body).save();
-        res.status(201).json({
-            code: 201,
-            msg: 'Successful created new user.',
-        });
+        const { username, password } = req.body;
+
+        if(!password){
+            return res.status(401).json({ code: 401, msg: 'Missing password' });
+        } else if(!username) {
+            return res.status(401).json({ code: 401, msg: 'Missing user name' });
+        } else {
+            await User(req.body).save();
+       
+            res.status(201).json({
+                code: 201,
+                msg: 'Successful created new user.',
+            });
+        }
+        
     }
     else {  //Must be an authenticate then!!! Query the DB and check if there's a match
         const user = await User.findOne(req.body);
@@ -26,7 +37,7 @@ router.post('/', async (req, res) => {
             return res.status(200).json({ code: 200, msg: "Authentication Successful", token: 'TEMPORARY_TOKEN' });
         }
     }
-});
+}));
 
 // Update a user
 router.put('/:id', async (req, res) => {
